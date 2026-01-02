@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 乞丐超人統計網站</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Mochiars+One&family=ZCOOL+KuaiLe&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --lotso-pink: #ff85a1;
+            --lotso-dark: #c9184a;
+            --gunter-black: #2d3436;
+            --gunter-yellow: #feca57;
+            --main-font: 'Noto Sans TC', sans-serif;
+            --title-font: 'Mochiars One', 'ZCOOL KuaiLe', cursive;
+        }
+        body {
+            font-family: var(--main-font);
+            background-color: #fff0f3;
+            color: var(--gunter-black);
+            overflow-x: hidden;
+        }
+        .header-font {
+            font-family: var(--title-font);
+        }
+        .card-lotso {
+            background: white;
+            border: 4px solid var(--lotso-pink);
+            border-radius: 24px;
+            box-shadow: 10px 10px 0px var(--lotso-pink);
+            transition: transform 0.2s ease;
+        }
+        .card-lotso:hover {
+            transform: translateY(-5px);
+        }
+        .calendar-day {
+            aspect-ratio: 1 / 1;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            border: 2px solid transparent;
+            font-weight: 700;
+            position: relative;
+        }
+        .calendar-day:hover {
+            background-color: var(--lotso-pink);
+            color: white;
+            transform: scale(1.15) rotate(5deg);
+            border-radius: 12px;
+            z-index: 10;
+        }
+        .calendar-day.active {
+            background-color: var(--lotso-dark);
+            color: white;
+            border-radius: 12px;
+            box-shadow: 0 0 15px var(--lotso-pink);
+        }
+        .calendar-day.has-data::after {
+            content: '🍱';
+            font-size: 12px;
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+        }
+        .btn-primary {
+            background-color: var(--lotso-pink);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 99px;
+            font-weight: 900;
+            box-shadow: 0 4px 0 var(--lotso-dark);
+            transition: all 0.1s;
+        }
+        .btn-primary:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 var(--lotso-dark);
+        }
+        .decoration-anim {
+            animation: bounce 3s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0) rotate(0); }
+            50% { transform: translateY(-15px) rotate(10deg); }
+        }
+        .achievement-badge {
+            background: linear-gradient(135deg, var(--gunter-yellow), #f39c12);
+            padding: 2px 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #fff;
+            font-weight: bold;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fff0f3; }
+        ::-webkit-scrollbar-thumb { background: var(--lotso-pink); border-radius: 10px; }
+    </style>
+</head>
+<body class="min-h-screen pb-10">
+
+    <!-- 漂浮裝飾物 -->
+    <div class="fixed top-10 left-5 decoration-anim text-5xl opacity-80 pointer-events-none">🐧</div>
+    <div class="fixed top-20 right-5 decoration-anim text-5xl opacity-80 pointer-events-none" style="animation-delay: 1.5s;">🧸</div>
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- 標題與語錄區 -->
+        <header class="text-center mb-10">
+            <h1 class="header-font text-5xl md:text-8xl text-pink-600 mb-4 drop-shadow-xl tracking-tighter">
+                2026 乞丐超人
+            </h1>
+            <div id="quoteBox" class="bg-white inline-block px-6 py-2 rounded-full border-2 border-pink-300 shadow-sm italic text-pink-500 font-bold transition-opacity duration-500">
+                「只要有折扣，我就是世界的王者！」 — 阿鵝
+            </div>
+        </header>
+
+        <!-- 統計看板 (移除身分區塊) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <div class="card-lotso p-8 text-center">
+                <p class="text-sm font-black text-gray-400 uppercase mb-2">購買戰利品</p>
+                <p id="totalCount" class="text-6xl font-black text-pink-600">0</p>
+                <p class="text-xs text-pink-400 mt-2 font-bold italic">✨ 今天也拯救了食物！</p>
+            </div>
+            <div class="card-lotso p-8 text-center border-yellow-400 shadow-[10px_10px_0px_#feca57]">
+                <p class="text-sm font-black text-gray-400 uppercase mb-2">守護錢包總額</p>
+                <p id="totalSaved" class="text-6xl font-black text-yellow-500">$0</p>
+                <div class="mt-2 flex justify-center">
+                    <span id="achievementRank" class="achievement-badge">省錢初心者</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 日曆區 -->
+        <div class="card-lotso p-4 md:p-8 mb-8">
+            <div class="flex justify-between items-center mb-8">
+                <button onclick="changeMonth(-1)" class="text-4xl hover:scale-125 transition-transform text-pink-500 filter drop-shadow">🐧</button>
+                <h2 id="currentMonthDisplay" class="header-font text-4xl text-gray-800">2026年 1月</h2>
+                <button onclick="changeMonth(1)" class="text-4xl hover:scale-125 transition-transform text-pink-500 filter drop-shadow">🧸</button>
+            </div>
+            
+            <div class="grid grid-cols-7 gap-2 mb-4">
+                <div class="text-center font-black text-pink-400">SUN</div>
+                <div class="text-center font-black text-gray-400">MON</div>
+                <div class="text-center font-black text-gray-400">TUE</div>
+                <div class="text-center font-black text-gray-400">WED</div>
+                <div class="text-center font-black text-gray-400">THU</div>
+                <div class="text-center font-black text-gray-400">FRI</div>
+                <div class="text-center font-black text-pink-400">SAT</div>
+            </div>
+            <div id="calendarGrid" class="grid grid-cols-7 gap-2">
+                <!-- JS Generation -->
+            </div>
+        </div>
+
+        <!-- 記錄表單 -->
+        <div id="dataSection" class="card-lotso p-8 hidden bg-white">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h3 id="selectedDateDisplay" class="text-2xl font-black text-pink-600">選擇日期</h3>
+                    <p class="text-sm text-gray-400">填寫你的今日戰果！</p>
+                </div>
+                <button onclick="closeDataSection()" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition-colors font-bold">✕</button>
+            </div>
+
+            <div class="bg-gray-50 p-6 rounded-3xl border-2 border-dashed border-pink-200 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="block font-black text-gray-700">🎁 商品名稱</label>
+                        <input type="text" id="itemName" placeholder="例如：超大飯糰" class="w-full p-3 rounded-2xl border-2 border-transparent focus:border-pink-500 focus:bg-white bg-white shadow-inner outline-none transition-all">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block font-black text-gray-700">🏪 哪間超商</label>
+                        <select id="store" class="w-full p-3 rounded-2xl border-2 bg-white outline-none font-bold">
+                            <option value="全家">全家 FamilyMart (7折)</option>
+                            <option value="7-11">7-11 i珍食 (65折)</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block font-black text-gray-700">💰 價格設定</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="originalPrice" oninput="calculatePrice()" placeholder="原價" class="w-2/3 p-3 rounded-2xl border-2 bg-white outline-none">
+                            <input type="number" id="discount" step="0.01" value="0.7" oninput="calculatePrice()" class="w-1/3 p-3 rounded-2xl border-2 bg-white outline-none">
+                        </div>
+                        <div class="flex gap-2 mt-2">
+                            <button onclick="setDiscount(0.7)" class="text-xs bg-yellow-400 text-white font-bold px-3 py-1 rounded-full shadow-sm hover:scale-105 transition-transform">友善7折</button>
+                            <button onclick="setDiscount(0.65)" class="text-xs bg-pink-500 text-white font-bold px-3 py-1 rounded-full shadow-sm hover:scale-105 transition-transform">i珍食65折</button>
+                        </div>
+                    </div>
+                    <div class="flex items-end pb-1">
+                        <div class="bg-white p-4 rounded-2xl border-2 border-pink-100 w-full">
+                            <div class="text-sm text-gray-400 font-bold">折扣價 / 省下</div>
+                            <div class="text-2xl font-black text-pink-600">
+                                <span id="finalPriceDisplay">$0</span>
+                                <span class="text-green-500 text-sm ml-2">+省$ <span id="saveDisplay">0</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 text-center">
+                    <button onclick="addItem()" class="btn-primary w-full md:w-auto text-xl">
+                        將寶物放入背囊！ 🎒
+                    </button>
+                </div>
+            </div>
+
+            <!-- 清單列表 -->
+            <div id="itemsList" class="space-y-3">
+                <!-- Dynamic Items -->
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-8 py-4 rounded-full shadow-2xl transition-all duration-300 opacity-0 pointer-events-none font-bold z-50">
+        紀錄成功！
+    </div>
+
+    <script>
+        let currentYear = 2026;
+        let currentMonth = 0;
+        let selectedDate = null;
+        let userData = JSON.parse(localStorage.getItem('beggarHero2026Data')) || {};
+
+        const quotes = [
+            "「只要有折扣，我就是世界的王者！」 — 阿鵝",
+            "「草莓味的省錢生活最棒了。」 — 熊抱哥",
+            "「原價是給凡人付的，我們是超人。」 — 乞丐超人",
+            "「省下的每一分錢，都是對未來的投資。」 — 熊抱哥",
+            "「嘎！嘎嘎！（那是我的飯糰！）」 — 阿鵝",
+            "「看到貼紙沒去拿？阿鵝會生氣唷！」",
+            "「雖然我抱起來很香，但折扣更香。」 — 熊抱哥"
+        ];
+
+        window.onload = () => {
+            renderCalendar();
+            updateStats();
+            setInterval(rotateQuote, 5000);
+        };
+
+        function rotateQuote() {
+            const quoteBox = document.getElementById('quoteBox');
+            quoteBox.style.opacity = 0;
+            setTimeout(() => {
+                quoteBox.innerText = quotes[Math.floor(Math.random() * quotes.length)];
+                quoteBox.style.opacity = 1;
+            }, 500);
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const monthDisplay = document.getElementById('currentMonthDisplay');
+            grid.innerHTML = '';
+            
+            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            monthDisplay.innerText = `${currentYear}年 ${currentMonth + 1}月`;
+
+            for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div></div>`;
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateKey = getDateKey(day);
+                const hasData = userData[dateKey] && userData[dateKey].length > 0;
+                const isActive = selectedDate === dateKey ? 'active' : '';
+                const dataClass = hasData ? 'has-data' : '';
+                
+                grid.innerHTML += `
+                    <div class="calendar-day flex items-center justify-center text-xl ${isActive} ${dataClass}" 
+                         onclick="selectDate(${day})">
+                        ${day}
+                    </div>
+                `;
+            }
+        }
+
+        function getDateKey(day) {
+            return `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+        }
+
+        function changeMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+            else if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+            renderCalendar();
+        }
+
+        function selectDate(day) {
+            selectedDate = getDateKey(day);
+            document.getElementById('selectedDateDisplay').innerText = `📅 ${selectedDate}`;
+            document.getElementById('dataSection').classList.remove('hidden');
+            renderCalendar();
+            renderItems();
+            document.getElementById('dataSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function closeDataSection() {
+            document.getElementById('dataSection').classList.add('hidden');
+            selectedDate = null;
+            renderCalendar();
+        }
+
+        function setDiscount(val) {
+            document.getElementById('discount').value = val;
+            calculatePrice();
+        }
+
+        function calculatePrice() {
+            const original = parseFloat(document.getElementById('originalPrice').value) || 0;
+            const discount = parseFloat(document.getElementById('discount').value) || 1;
+            const final = Math.round(original * discount);
+            const saved = Math.max(0, original - final);
+            document.getElementById('finalPriceDisplay').innerText = `$${final}`;
+            document.getElementById('saveDisplay').innerText = saved;
+            return { final, saved };
+        }
+
+        function addItem() {
+            const name = document.getElementById('itemName').value || '未知寶物';
+            const store = document.getElementById('store').value;
+            const original = parseFloat(document.getElementById('originalPrice').value) || 0;
+            const discount = parseFloat(document.getElementById('discount').value) || 1;
+            
+            if (original <= 0) return showToast('原價不能是0元呀！');
+
+            const { final, saved } = calculatePrice();
+            if (!userData[selectedDate]) userData[selectedDate] = [];
+            
+            userData[selectedDate].push({ id: Date.now(), name, store, original, discount, final, saved });
+            saveData();
+            renderItems();
+            updateStats();
+            renderCalendar();
+            
+            document.getElementById('itemName').value = '';
+            document.getElementById('originalPrice').value = '';
+            showToast('記錄成功！阿鵝給你一個讚 👍');
+        }
+
+        function deleteItem(id) {
+            userData[selectedDate] = userData[selectedDate].filter(item => item.id !== id);
+            saveData();
+            renderItems();
+            updateStats();
+            renderCalendar();
+        }
+
+        function renderItems() {
+            const container = document.getElementById('itemsList');
+            container.innerHTML = '';
+            const items = userData[selectedDate] || [];
+
+            if (items.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-gray-300 font-bold">這天還沒有冒險紀錄呢...</div>`;
+                return;
+            }
+
+            items.forEach(item => {
+                container.innerHTML += `
+                    <div class="flex items-center justify-between bg-white p-4 rounded-2xl border-2 border-pink-50 shadow-sm hover:border-pink-200 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <div class="bg-pink-100 p-2 rounded-xl text-2xl">🍱</div>
+                            <div>
+                                <div class="font-black text-gray-800">${item.name}</div>
+                                <div class="text-xs text-pink-400 font-bold">${item.store} / ${Math.round(item.discount*100)}% 價格</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-6">
+                            <div class="text-right">
+                                <div class="text-xl font-black text-pink-600">$${item.final}</div>
+                                <div class="text-xs text-green-500 font-bold">省 $${item.saved}</div>
+                            </div>
+                            <button onclick="deleteItem(${item.id})" class="text-gray-300 hover:text-red-500 text-xl transition-colors font-bold px-2">✕</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function updateStats() {
+            let totalCount = 0;
+            let totalSaved = 0;
+            Object.values(userData).forEach(dayItems => {
+                dayItems.forEach(item => {
+                    totalCount++;
+                    totalSaved += item.saved;
+                });
+            });
+
+            document.getElementById('totalCount').innerText = totalCount;
+            document.getElementById('totalSaved').innerText = `$${totalSaved}`;
+
+            let rank = "省錢初心者";
+            if (totalSaved > 10000) rank = "打折界神祇";
+            else if (totalSaved > 5000) rank = "省錢傳奇";
+            else if (totalSaved > 2000) rank = "資深乞丐超人";
+            else if (totalSaved > 500) rank = "省錢小能手";
+
+            document.getElementById('achievementRank').innerText = rank;
+        }
+
+        function saveData() {
+            localStorage.setItem('beggarHero2026Data', JSON.stringify(userData));
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.opacity = 1;
+            toast.classList.remove('translate-y-10');
+            setTimeout(() => {
+                toast.style.opacity = 0;
+                toast.classList.add('translate-y-10');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
