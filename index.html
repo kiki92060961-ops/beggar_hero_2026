@@ -180,7 +180,7 @@
                     </div>
                     <div class="space-y-2">
                         <label class="block font-black text-gray-700">🏪 哪間超商</label>
-                        <select id="store" class="w-full p-3 rounded-2xl border-2 bg-white outline-none font-bold">
+                        <select id="store" onchange="handleStoreChange()" class="w-full p-3 rounded-2xl border-2 bg-white outline-none font-bold">
                             <option value="全家">全家 FamilyMart (7折)</option>
                             <option value="7-11">7-11 i珍食 (65折)</option>
                             <option value="其他">其他</option>
@@ -231,7 +231,7 @@
         import { getFirestore, doc, setDoc, onSnapshot, collection, query } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
-        // 配置資訊 (這些資訊是公開的，安全關鍵在於 Firebase 的 Rules 設定)
+        // 配置資訊
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
@@ -278,12 +278,10 @@
 
         // 監聽雲端數據更新
         function listenToUpdates() {
-            // 注意：使用公共路徑 /artifacts/{appId}/public/data/allData
             const dataRef = doc(db, 'artifacts', appId, 'public', 'data', 'records');
             onSnapshot(dataRef, (docSnap) => {
                 if (docSnap.exists()) {
                     userData = docSnap.data().content || {};
-                    // 同步到本地作為緩存
                     localStorage.setItem('beggarHero2026Data', JSON.stringify(userData));
                     renderCalendar();
                     updateStats();
@@ -307,9 +305,19 @@
 
         window.onload = initApp;
 
-        // 原有邏輯掛載到全域供 HTML 調用
+        // 當超商選單改變時，自動更新折扣
+        window.handleStoreChange = function() {
+            const store = document.getElementById('store').value;
+            if (store === '全家') {
+                setDiscount(0.7);
+            } else if (store === '7-11') {
+                setDiscount(0.65);
+            }
+        }
+
         window.rotateQuote = function() {
             const quoteBox = document.getElementById('quoteBox');
+            if(!quoteBox) return;
             quoteBox.style.opacity = 0;
             setTimeout(() => {
                 quoteBox.innerText = quotes[Math.floor(Math.random() * quotes.length)];
@@ -396,7 +404,6 @@
             
             userData[selectedDate].push({ id: Date.now(), name, store, original, discount, final, saved });
             
-            // 先儲存到本地與雲端
             localStorage.setItem('beggarHero2026Data', JSON.stringify(userData));
             await syncToCloud();
             
@@ -466,7 +473,7 @@
 
             let rank = "省錢初心者";
             if (totalSaved > 10000) rank = "打折界神祇";
-            else if (totalSaved > 5000) rank = "省錢傳奇";
+            else if (totalSaved > 5000) rank = "省錢傳劇";
             else if (totalSaved > 2000) rank = "資深乞丐超人";
             else if (totalSaved > 500) rank = "省錢小能手";
 
