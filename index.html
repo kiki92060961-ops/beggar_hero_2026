@@ -107,7 +107,7 @@
     </style>
 </head>
 <body class="min-h-screen pb-10">
-    <div id="syncStatus">☁️ 連線中...</div>
+    <div id="syncStatus">☁️ 離線模式</div>
 
     <!-- 漂浮裝飾物 -->
     <div class="fixed top-10 left-5 decoration-anim text-5xl opacity-80 pointer-events-none">🐧</div>
@@ -209,7 +209,7 @@
                 </div>
                 <div class="mt-8 text-center">
                     <button onclick="addItem()" class="btn-primary w-full md:w-auto text-xl">
-                        將寶物放入背囊！ 🎒
+                        將寶物放入背包！ 🎒
                     </button>
                 </div>
             </div>
@@ -225,18 +225,29 @@
         紀錄成功！
     </div>
 
-    <!-- Firebase SDKs -->
     <script type="module">
+        // Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection, query } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
-        // 配置資訊
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'beggar-hero-2026';
+        let db, auth;
+        let appId = 'beggar-hero-2026';
+        let useCloud = false;
+
+        // 偵測環境配置
+        try {
+            if (typeof __firebase_config !== 'undefined') {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                if (typeof __app_id !== 'undefined') appId = __app_id;
+                useCloud = true;
+            }
+        } catch (e) {
+            console.warn("Firebase config not found, switching to local mode.");
+        }
 
         let currentYear = 2026;
         let currentMonth = 0;
@@ -254,21 +265,24 @@
             "「雖然我抱起來很香，但折扣更香。」 — 熊抱哥"
         ];
 
-        // 初始化與匿名登入
         async function initApp() {
-            try {
-                await signInAnonymously(auth);
-                onAuthStateChanged(auth, (u) => {
-                    user = u;
-                    if (user) {
-                        document.getElementById('syncStatus').innerText = "☁️ 雲端已同步";
-                        document.getElementById('syncStatus').classList.add('text-green-600');
-                        listenToUpdates();
-                    }
-                });
-            } catch (error) {
-                console.error("Auth failed", error);
-                document.getElementById('syncStatus').innerText = "❌ 僅本地儲存";
+            if (useCloud && auth) {
+                try {
+                    await signInAnonymously(auth);
+                    onAuthStateChanged(auth, (u) => {
+                        user = u;
+                        if (user) {
+                            document.getElementById('syncStatus').innerText = "☁️ 雲端已同步";
+                            document.getElementById('syncStatus').classList.add('text-green-600');
+                            listenToUpdates();
+                        }
+                    });
+                } catch (error) {
+                    console.error("Auth failed", error);
+                    setLocalMode();
+                }
+            } else {
+                setLocalMode();
             }
             
             renderCalendar();
@@ -276,8 +290,13 @@
             setInterval(rotateQuote, 5000);
         }
 
-        // 監聽雲端數據更新
+        function setLocalMode() {
+            document.getElementById('syncStatus').innerText = "💾 本地儲存模式";
+            document.getElementById('syncStatus').classList.add('text-blue-500');
+        }
+
         function listenToUpdates() {
+            if (!useCloud) return;
             const dataRef = doc(db, 'artifacts', appId, 'public', 'data', 'records');
             onSnapshot(dataRef, (docSnap) => {
                 if (docSnap.exists()) {
@@ -287,14 +306,12 @@
                     updateStats();
                     if (selectedDate) renderItems();
                 }
-            }, (err) => {
-                console.error("Firestore sync error", err);
-            });
+            }, (err) => console.error("Firestore error", err));
         }
 
-        // 寫入數據
         async function syncToCloud() {
-            if (!user) return;
+            localStorage.setItem('beggarHero2026Data', JSON.stringify(userData));
+            if (!useCloud || !user) return;
             try {
                 const dataRef = doc(db, 'artifacts', appId, 'public', 'data', 'records');
                 await setDoc(dataRef, { content: userData });
@@ -305,14 +322,10 @@
 
         window.onload = initApp;
 
-        // 當超商選單改變時，自動更新折扣
         window.handleStoreChange = function() {
             const store = document.getElementById('store').value;
-            if (store === '全家') {
-                setDiscount(0.7);
-            } else if (store === '7-11') {
-                setDiscount(0.65);
-            }
+            if (store === '全家') setDiscount(0.7);
+            else if (store === '7-11') setDiscount(0.65);
         }
 
         window.rotateQuote = function() {
@@ -328,6 +341,7 @@
         window.renderCalendar = function() {
             const grid = document.getElementById('calendarGrid');
             const monthDisplay = document.getElementById('currentMonthDisplay');
+            if(!grid) return;
             grid.innerHTML = '';
             
             const firstDay = new Date(currentYear, currentMonth, 1).getDay();
@@ -404,21 +418,18 @@
             
             userData[selectedDate].push({ id: Date.now(), name, store, original, discount, final, saved });
             
-            localStorage.setItem('beggarHero2026Data', JSON.stringify(userData));
             await syncToCloud();
-            
             renderItems();
             updateStats();
             renderCalendar();
             
             document.getElementById('itemName').value = '';
             document.getElementById('originalPrice').value = '';
-            showToast('紀錄成功！已同步至雲端 ☁️');
+            showToast(useCloud ? '紀錄成功！已同步至雲端 ☁️' : '紀錄成功！已儲存在此瀏覽器 💾');
         }
 
         window.deleteItem = async function(id) {
             userData[selectedDate] = userData[selectedDate].filter(item => item.id !== id);
-            localStorage.setItem('beggarHero2026Data', JSON.stringify(userData));
             await syncToCloud();
             renderItems();
             updateStats();
@@ -472,8 +483,8 @@
             document.getElementById('totalSaved').innerText = `$${totalSaved}`;
 
             let rank = "省錢初心者";
-            if (totalSaved > 10000) rank = "打折界的神";
-            else if (totalSaved > 5000) rank = "省錢傳劇";
+            if (totalSaved > 10000) rank = "打折界神祇";
+            else if (totalSaved > 5000) rank = "省錢傳說";
             else if (totalSaved > 2000) rank = "資深乞丐超人";
             else if (totalSaved > 500) rank = "省錢小能手";
 
