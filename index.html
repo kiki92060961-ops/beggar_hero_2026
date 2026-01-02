@@ -93,9 +93,21 @@
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #fff0f3; }
         ::-webkit-scrollbar-thumb { background: var(--lotso-pink); border-radius: 10px; }
+        
+        #syncStatus {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.8);
+            z-index: 100;
+        }
     </style>
 </head>
 <body class="min-h-screen pb-10">
+    <div id="syncStatus">☁️ 連線中...</div>
 
     <!-- 漂浮裝飾物 -->
     <div class="fixed top-10 left-5 decoration-anim text-5xl opacity-80 pointer-events-none">🐧</div>
@@ -112,7 +124,7 @@
             </div>
         </header>
 
-        <!-- 統計看板 (移除身分區塊) -->
+        <!-- 統計看板 -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             <div class="card-lotso p-8 text-center">
                 <p class="text-sm font-black text-gray-400 uppercase mb-2">購買戰利品</p>
@@ -213,11 +225,24 @@
         紀錄成功！
     </div>
 
-    <script>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, query } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+        // 配置資訊 (這些資訊是公開的，安全關鍵在於 Firebase 的 Rules 設定)
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'beggar-hero-2026';
+
         let currentYear = 2026;
         let currentMonth = 0;
         let selectedDate = null;
         let userData = JSON.parse(localStorage.getItem('beggarHero2026Data')) || {};
+        let user = null;
 
         const quotes = [
             "「只要有折扣，我就是世界的王者！」 — 阿鵝",
@@ -229,13 +254,61 @@
             "「雖然我抱起來很香，但折扣更香。」 — 熊抱哥"
         ];
 
-        window.onload = () => {
+        // 初始化與匿名登入
+        async function initApp() {
+            try {
+                await signInAnonymously(auth);
+                onAuthStateChanged(auth, (u) => {
+                    user = u;
+                    if (user) {
+                        document.getElementById('syncStatus').innerText = "☁️ 雲端已同步";
+                        document.getElementById('syncStatus').classList.add('text-green-600');
+                        listenToUpdates();
+                    }
+                });
+            } catch (error) {
+                console.error("Auth failed", error);
+                document.getElementById('syncStatus').innerText = "❌ 僅本地儲存";
+            }
+            
             renderCalendar();
             updateStats();
             setInterval(rotateQuote, 5000);
-        };
+        }
 
-        function rotateQuote() {
+        // 監聽雲端數據更新
+        function listenToUpdates() {
+            // 注意：使用公共路徑 /artifacts/{appId}/public/data/allData
+            const dataRef = doc(db, 'artifacts', appId, 'public', 'data', 'records');
+            onSnapshot(dataRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    userData = docSnap.data().content || {};
+                    // 同步到本地作為緩存
+                    localStorage.setItem('beggarHero2026Data', JSON.stringify(userData));
+                    renderCalendar();
+                    updateStats();
+                    if (selectedDate) renderItems();
+                }
+            }, (err) => {
+                console.error("Firestore sync error", err);
+            });
+        }
+
+        // 寫入數據
+        async function syncToCloud() {
+            if (!user) return;
+            try {
+                const dataRef = doc(db, 'artifacts', appId, 'public', 'data', 'records');
+                await setDoc(dataRef, { content: userData });
+            } catch (error) {
+                console.error("Upload failed", error);
+            }
+        }
+
+        window.onload = initApp;
+
+        // 原有邏輯掛載到全域供 HTML 調用
+        window.rotateQuote = function() {
             const quoteBox = document.getElementById('quoteBox');
             quoteBox.style.opacity = 0;
             setTimeout(() => {
@@ -244,7 +317,7 @@
             }, 500);
         }
 
-        function renderCalendar() {
+        window.renderCalendar = function() {
             const grid = document.getElementById('calendarGrid');
             const monthDisplay = document.getElementById('currentMonthDisplay');
             grid.innerHTML = '';
@@ -261,12 +334,11 @@
                 const isActive = selectedDate === dateKey ? 'active' : '';
                 const dataClass = hasData ? 'has-data' : '';
                 
-                grid.innerHTML += `
-                    <div class="calendar-day flex items-center justify-center text-xl ${isActive} ${dataClass}" 
-                         onclick="selectDate(${day})">
-                        ${day}
-                    </div>
-                `;
+                const dayEl = document.createElement('div');
+                dayEl.className = `calendar-day flex items-center justify-center text-xl ${isActive} ${dataClass}`;
+                dayEl.innerText = day;
+                dayEl.onclick = () => selectDate(day);
+                grid.appendChild(dayEl);
             }
         }
 
@@ -274,14 +346,14 @@
             return `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
         }
 
-        function changeMonth(delta) {
+        window.changeMonth = function(delta) {
             currentMonth += delta;
             if (currentMonth > 11) { currentMonth = 0; currentYear++; }
             else if (currentMonth < 0) { currentMonth = 11; currentYear--; }
             renderCalendar();
         }
 
-        function selectDate(day) {
+        window.selectDate = function(day) {
             selectedDate = getDateKey(day);
             document.getElementById('selectedDateDisplay').innerText = `📅 ${selectedDate}`;
             document.getElementById('dataSection').classList.remove('hidden');
@@ -290,18 +362,18 @@
             document.getElementById('dataSection').scrollIntoView({ behavior: 'smooth' });
         }
 
-        function closeDataSection() {
+        window.closeDataSection = function() {
             document.getElementById('dataSection').classList.add('hidden');
             selectedDate = null;
             renderCalendar();
         }
 
-        function setDiscount(val) {
+        window.setDiscount = function(val) {
             document.getElementById('discount').value = val;
             calculatePrice();
         }
 
-        function calculatePrice() {
+        window.calculatePrice = function() {
             const original = parseFloat(document.getElementById('originalPrice').value) || 0;
             const discount = parseFloat(document.getElementById('discount').value) || 1;
             const final = Math.round(original * discount);
@@ -311,7 +383,7 @@
             return { final, saved };
         }
 
-        function addItem() {
+        window.addItem = async function() {
             const name = document.getElementById('itemName').value || '未知寶物';
             const store = document.getElementById('store').value;
             const original = parseFloat(document.getElementById('originalPrice').value) || 0;
@@ -323,25 +395,30 @@
             if (!userData[selectedDate]) userData[selectedDate] = [];
             
             userData[selectedDate].push({ id: Date.now(), name, store, original, discount, final, saved });
-            saveData();
+            
+            // 先儲存到本地與雲端
+            localStorage.setItem('beggarHero2026Data', JSON.stringify(userData));
+            await syncToCloud();
+            
             renderItems();
             updateStats();
             renderCalendar();
             
             document.getElementById('itemName').value = '';
             document.getElementById('originalPrice').value = '';
-            showToast('記錄成功！阿鵝給你一個讚 👍');
+            showToast('紀錄成功！已同步至雲端 ☁️');
         }
 
-        function deleteItem(id) {
+        window.deleteItem = async function(id) {
             userData[selectedDate] = userData[selectedDate].filter(item => item.id !== id);
-            saveData();
+            localStorage.setItem('beggarHero2026Data', JSON.stringify(userData));
+            await syncToCloud();
             renderItems();
             updateStats();
             renderCalendar();
         }
 
-        function renderItems() {
+        window.renderItems = function() {
             const container = document.getElementById('itemsList');
             container.innerHTML = '';
             const items = userData[selectedDate] || [];
@@ -352,28 +429,29 @@
             }
 
             items.forEach(item => {
-                container.innerHTML += `
-                    <div class="flex items-center justify-between bg-white p-4 rounded-2xl border-2 border-pink-50 shadow-sm hover:border-pink-200 transition-colors">
-                        <div class="flex items-center gap-4">
-                            <div class="bg-pink-100 p-2 rounded-xl text-2xl">🍱</div>
-                            <div>
-                                <div class="font-black text-gray-800">${item.name}</div>
-                                <div class="text-xs text-pink-400 font-bold">${item.store} / ${Math.round(item.discount*100)}% 價格</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-6">
-                            <div class="text-right">
-                                <div class="text-xl font-black text-pink-600">$${item.final}</div>
-                                <div class="text-xs text-green-500 font-bold">省 $${item.saved}</div>
-                            </div>
-                            <button onclick="deleteItem(${item.id})" class="text-gray-300 hover:text-red-500 text-xl transition-colors font-bold px-2">✕</button>
+                const itemEl = document.createElement('div');
+                itemEl.className = "flex items-center justify-between bg-white p-4 rounded-2xl border-2 border-pink-50 shadow-sm hover:border-pink-200 transition-colors";
+                itemEl.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="bg-pink-100 p-2 rounded-xl text-2xl">🍱</div>
+                        <div>
+                            <div class="font-black text-gray-800">${item.name}</div>
+                            <div class="text-xs text-pink-400 font-bold">${item.store} / ${Math.round(item.discount*100)}% 價格</div>
                         </div>
                     </div>
+                    <div class="flex items-center gap-6">
+                        <div class="text-right">
+                            <div class="text-xl font-black text-pink-600">$${item.final}</div>
+                            <div class="text-xs text-green-500 font-bold">省 $${item.saved}</div>
+                        </div>
+                        <button onclick="deleteItem(${item.id})" class="text-gray-300 hover:text-red-500 text-xl transition-colors font-bold px-2">✕</button>
+                    </div>
                 `;
+                container.appendChild(itemEl);
             });
         }
 
-        function updateStats() {
+        window.updateStats = function() {
             let totalCount = 0;
             let totalSaved = 0;
             Object.values(userData).forEach(dayItems => {
@@ -395,18 +473,14 @@
             document.getElementById('achievementRank').innerText = rank;
         }
 
-        function saveData() {
-            localStorage.setItem('beggarHero2026Data', JSON.stringify(userData));
-        }
-
-        function showToast(msg) {
+        window.showToast = function(msg) {
             const toast = document.getElementById('toast');
             toast.innerText = msg;
             toast.style.opacity = 1;
-            toast.classList.remove('translate-y-10');
+            toast.style.pointerEvents = 'auto';
             setTimeout(() => {
                 toast.style.opacity = 0;
-                toast.classList.add('translate-y-10');
+                toast.style.pointerEvents = 'none';
             }, 3000);
         }
     </script>
