@@ -3,230 +3,232 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026 乞丐超人統計網站</title>
+    <title>2026 乞丐超人 | 日系質感版</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Mochiars+One&family=ZCOOL+KuaiLe&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700;900&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --lotso-pink: #ff85a1;
-            --lotso-dark: #c9184a;
-            --gunter-black: #2d3436;
-            --gunter-yellow: #feca57;
-            --main-font: 'Noto Sans TC', sans-serif;
-            --title-font: 'Mochiars One', 'ZCOOL KuaiLe', cursive;
+            --primary: #2c3e50;    /* 午夜藍 */
+            --accent: #f1c40f;     /* 亮金黃 */
+            --bg-light: #f8f9fa;   /* 質感灰白 */
+            --text-dark: #2d3436;
+            --soft-shadow: 0 10px 30px rgba(0,0,0,0.05);
         }
         body {
-            font-family: var(--main-font);
-            background-color: #fff0f3;
-            color: var(--gunter-black);
-            overflow-x: hidden;
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            letter-spacing: 0.02em;
         }
-        .header-font {
-            font-family: var(--title-font);
-        }
-        .card-lotso {
+        .font-num { font-family: 'Quicksand', sans-serif; }
+        
+        .glass-card {
             background: white;
-            border: 4px solid var(--lotso-pink);
-            border-radius: 24px;
-            box-shadow: 10px 10px 0px var(--lotso-pink);
-            transition: transform 0.2s ease;
+            border-radius: 20px;
+            box-shadow: var(--soft-shadow);
+            border: 1px solid rgba(0,0,0,0.03);
+            transition: all 0.3s ease;
         }
-        .card-lotso:hover {
-            transform: translateY(-5px);
+        .glass-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
         }
+
         .calendar-day {
             aspect-ratio: 1 / 1;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
             cursor: pointer;
-            border: 2px solid transparent;
-            font-weight: 700;
+            transition: all 0.2s;
+            font-weight: 500;
             position: relative;
         }
         .calendar-day:hover {
-            background-color: var(--lotso-pink);
-            color: white;
-            transform: scale(1.15) rotate(5deg);
-            border-radius: 12px;
-            z-index: 10;
+            background-color: #f1f2f6;
         }
+        /* 今天標記 */
+        .calendar-day.today {
+            color: var(--primary);
+            font-weight: 900;
+        }
+        .calendar-day.today::before {
+            content: '';
+            position: absolute;
+            width: 35px;
+            height: 35px;
+            background: var(--accent);
+            opacity: 0.3;
+            border-radius: 50%;
+            z-index: -1;
+        }
+        /* 選中狀態 */
         .calendar-day.active {
-            background-color: var(--lotso-dark);
-            color: white;
-            border-radius: 12px;
-            box-shadow: 0 0 15px var(--lotso-pink);
+            background-color: var(--primary) !important;
+            color: white !important;
+            box-shadow: 0 8px 15px rgba(44, 62, 80, 0.3);
         }
         .calendar-day.has-data::after {
-            content: '🍱';
-            font-size: 12px;
+            content: '';
             position: absolute;
-            bottom: 4px;
-            right: 4px;
+            bottom: 6px;
+            width: 4px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 50%;
         }
-        .btn-primary {
-            background-color: var(--lotso-pink);
+
+        .btn-main {
+            background: var(--primary);
             color: white;
-            padding: 12px 24px;
-            border-radius: 99px;
-            font-weight: 900;
-            box-shadow: 0 4px 0 var(--lotso-dark);
-            transition: all 0.1s;
+            padding: 12px 30px;
+            border-radius: 12px;
+            font-weight: 700;
+            transition: all 0.3s;
         }
-        .btn-primary:active {
-            transform: translateY(4px);
-            box-shadow: 0 0px 0 var(--lotso-dark);
+        .btn-main:hover {
+            background: #34495e;
+            transform: scale(1.02);
         }
-        .decoration-anim {
-            animation: bounce 3s infinite;
-        }
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0) rotate(0); }
-            50% { transform: translateY(-15px) rotate(10deg); }
-        }
-        .achievement-badge {
-            background: linear-gradient(135deg, var(--gunter-yellow), #f39c12);
-            padding: 2px 10px;
-            border-radius: 8px;
-            font-size: 14px;
-            color: #fff;
-            font-weight: bold;
-        }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #fff0f3; }
-        ::-webkit-scrollbar-thumb { background: var(--lotso-pink); border-radius: 10px; }
-        
+
         #syncStatus {
             position: fixed;
-            top: 10px;
-            right: 10px;
-            font-size: 12px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            background: rgba(255,255,255,0.8);
+            bottom: 20px;
+            right: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 6px 14px;
+            border-radius: 10px;
+            background: white;
+            box-shadow: var(--soft-shadow);
             z-index: 100;
         }
+
+        /* 隱藏原生卷軸 */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #dfe6e9; border-radius: 10px; }
     </style>
 </head>
-<body class="min-h-screen pb-10">
-    <div id="syncStatus">☁️ 離線模式</div>
+<body class="min-h-screen pb-20">
+    <div id="syncStatus" class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-gray-400" id="statusDot"></span>
+        <span id="statusText">正在檢查連線...</span>
+    </div>
 
-    <!-- 漂浮裝飾物 -->
-    <div class="fixed top-10 left-5 decoration-anim text-5xl opacity-80 pointer-events-none">🐧</div>
-    <div class="fixed top-20 right-5 decoration-anim text-5xl opacity-80 pointer-events-none" style="animation-delay: 1.5s;">🧸</div>
-
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
-        <!-- 標題與語錄區 -->
-        <header class="text-center mb-10">
-            <h1 class="header-font text-5xl md:text-8xl text-pink-600 mb-4 drop-shadow-xl tracking-tighter">
-                2026 乞丐超人
+    <div class="container mx-auto px-6 py-12 max-w-4xl">
+        <!-- 簡潔標題 -->
+        <header class="mb-16">
+            <h1 class="text-4xl font-black text-slate-800 tracking-tight mb-2 flex items-center gap-3">
+                <span class="text-amber-400">●</span> 2026 Beggar Hero
             </h1>
-            <div id="quoteBox" class="bg-white inline-block px-6 py-2 rounded-full border-2 border-pink-300 shadow-sm italic text-pink-500 font-bold transition-opacity duration-500">
-                「只要有折扣，我就是世界的王者！」 — 阿鵝
-            </div>
+            <p class="text-slate-400 font-medium">紀錄每一份被挽救的美味與錢包。</p>
         </header>
 
-        <!-- 統計看板 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            <div class="card-lotso p-8 text-center">
-                <p class="text-sm font-black text-gray-400 uppercase mb-2">購買戰利品</p>
-                <p id="totalCount" class="text-6xl font-black text-pink-600">0</p>
-                <p class="text-xs text-pink-400 mt-2 font-bold italic">✨ 今天也拯救了食物！</p>
+        <!-- 數據儀表板 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            <div class="glass-card p-8">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Saved Items</span>
+                    <span class="text-2xl">🍱</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span id="totalCount" class="font-num text-5xl font-bold text-slate-800">0</span>
+                    <span class="text-slate-400 font-bold">件</span>
+                </div>
             </div>
-            <div class="card-lotso p-8 text-center border-yellow-400 shadow-[10px_10px_0px_#feca57]">
-                <p class="text-sm font-black text-gray-400 uppercase mb-2">守護錢包總額</p>
-                <p id="totalSaved" class="text-6xl font-black text-yellow-500">$0</p>
-                <div class="mt-2 flex justify-center">
-                    <span id="achievementRank" class="achievement-badge">省錢初心者</span>
+            <div class="glass-card p-8">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Savings</span>
+                    <span class="text-2xl">🪙</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-2xl font-bold text-slate-800">$</span>
+                    <span id="totalSaved" class="font-num text-5xl font-bold text-slate-800">0</span>
+                </div>
+                <div class="mt-4">
+                    <span id="achievementRank" class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded-md font-bold uppercase tracking-tighter">初心冒險者</span>
                 </div>
             </div>
         </div>
 
-        <!-- 日曆區 -->
-        <div class="card-lotso p-4 md:p-8 mb-8">
-            <div class="flex justify-between items-center mb-8">
-                <button onclick="changeMonth(-1)" class="text-4xl hover:scale-125 transition-transform text-pink-500 filter drop-shadow">🐧</button>
-                <h2 id="currentMonthDisplay" class="header-font text-4xl text-gray-800">2026年 1月</h2>
-                <button onclick="changeMonth(1)" class="text-4xl hover:scale-125 transition-transform text-pink-500 filter drop-shadow">🧸</button>
+        <!-- 月曆模組 -->
+        <div class="glass-card p-8 mb-10">
+            <div class="flex justify-between items-center mb-10">
+                <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400 font-bold">←</button>
+                <h2 id="currentMonthDisplay" class="text-xl font-bold text-slate-700">2026 / 01</h2>
+                <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-400 font-bold">→</button>
             </div>
             
-            <div class="grid grid-cols-7 gap-2 mb-4">
-                <div class="text-center font-black text-pink-400">SUN</div>
-                <div class="text-center font-black text-gray-400">MON</div>
-                <div class="text-center font-black text-gray-400">TUE</div>
-                <div class="text-center font-black text-gray-400">WED</div>
-                <div class="text-center font-black text-gray-400">THU</div>
-                <div class="text-center font-black text-gray-400">FRI</div>
-                <div class="text-center font-black text-pink-400">SAT</div>
+            <div class="grid grid-cols-7 gap-1 mb-4">
+                <div class="text-center text-[10px] font-black text-slate-300 tracking-widest">SUN</div>
+                <div class="text-center text-[10px] font-black text-slate-300 tracking-widest">MON</div>
+                <div class="text-center text-[10px] font-black text-slate-300 tracking-widest">TUE</div>
+                <div class="text-center text-[10px] font-black text-slate-300 tracking-widest">WED</div>
+                <div class="text-center text-[10px] font-black text-slate-300 tracking-widest">THU</div>
+                <div class="text-center text-[10px] font-black text-slate-300 tracking-widest">FRI</div>
+                <div class="text-center text-[10px] font-black text-slate-300 tracking-widest">SAT</div>
             </div>
-            <div id="calendarGrid" class="grid grid-cols-7 gap-2">
+            <div id="calendarGrid" class="grid grid-cols-7 gap-1 font-num text-sm">
                 <!-- JS Generation -->
             </div>
         </div>
 
-        <!-- 記錄表單 -->
-        <div id="dataSection" class="card-lotso p-8 hidden bg-white">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h3 id="selectedDateDisplay" class="text-2xl font-black text-pink-600">選擇日期</h3>
-                    <p class="text-sm text-gray-400">填寫你的今日戰果！</p>
-                </div>
-                <button onclick="closeDataSection()" class="bg-gray-100 hover:bg-gray-200 p-2 rounded-full transition-colors font-bold">✕</button>
+        <!-- 錄入與清單區 -->
+        <div id="dataSection" class="hidden space-y-6">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="h-[1px] flex-grow bg-slate-200"></div>
+                <span id="selectedDateDisplay" class="text-xs font-black text-slate-400 uppercase tracking-widest">SELECTED DATE</span>
+                <div class="h-[1px] flex-grow bg-slate-200"></div>
             </div>
 
-            <div class="bg-gray-50 p-6 rounded-3xl border-2 border-dashed border-pink-200 mb-8">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="space-y-2">
-                        <label class="block font-black text-gray-700">🎁 商品名稱</label>
-                        <input type="text" id="itemName" placeholder="例如：超大飯糰" class="w-full p-3 rounded-2xl border-2 border-transparent focus:border-pink-500 focus:bg-white bg-white shadow-inner outline-none transition-all">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="block font-black text-gray-700">🏪 哪間超商</label>
-                        <select id="store" onchange="handleStoreChange()" class="w-full p-3 rounded-2xl border-2 bg-white outline-none font-bold">
-                            <option value="全家">全家 FamilyMart (7折)</option>
-                            <option value="7-11">7-11 i珍食 (65折)</option>
-                            <option value="其他">其他</option>
-                        </select>
-                    </div>
-                    <div class="space-y-2">
-                        <label class="block font-black text-gray-700">💰 價格設定</label>
-                        <div class="flex gap-2">
-                            <input type="number" id="originalPrice" oninput="calculatePrice()" placeholder="原價" class="w-2/3 p-3 rounded-2xl border-2 bg-white outline-none">
-                            <input type="number" id="discount" step="0.01" value="0.7" oninput="calculatePrice()" class="w-1/3 p-3 rounded-2xl border-2 bg-white outline-none">
+            <div class="glass-card p-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-6">
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase block mb-2">Item Name</label>
+                            <input type="text" id="itemName" placeholder="今天帶走了什麼？" class="w-full pb-2 border-b-2 border-slate-100 focus:border-slate-800 outline-none transition-all text-lg font-medium">
                         </div>
-                        <div class="flex gap-2 mt-2">
-                            <button onclick="setDiscount(0.7)" class="text-xs bg-yellow-400 text-white font-bold px-3 py-1 rounded-full shadow-sm hover:scale-105 transition-transform">友善7折</button>
-                            <button onclick="setDiscount(0.65)" class="text-xs bg-pink-500 text-white font-bold px-3 py-1 rounded-full shadow-sm hover:scale-105 transition-transform">i珍食65折</button>
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase block mb-2">Store</label>
+                            <select id="store" onchange="handleStoreChange()" class="w-full pb-2 border-b-2 border-slate-100 focus:border-slate-800 bg-transparent outline-none font-bold">
+                                <option value="全家">FamilyMart (70%)</option>
+                                <option value="7-11">7-Eleven (65%)</option>
+                                <option value="其他">Other</option>
+                            </select>
                         </div>
                     </div>
-                    <div class="flex items-end pb-1">
-                        <div class="bg-white p-4 rounded-2xl border-2 border-pink-100 w-full">
-                            <div class="text-sm text-gray-400 font-bold">折扣價 / 省下</div>
-                            <div class="text-2xl font-black text-pink-600">
-                                <span id="finalPriceDisplay">$0</span>
-                                <span class="text-green-500 text-sm ml-2">+省$ <span id="saveDisplay">0</span></span>
+                    <div class="space-y-6">
+                        <div>
+                            <label class="text-[10px] font-black text-slate-400 uppercase block mb-2">Pricing</label>
+                            <div class="flex items-center gap-4">
+                                <input type="number" id="originalPrice" oninput="calculatePrice()" placeholder="原價" class="w-1/2 pb-2 border-b-2 border-slate-100 focus:border-slate-800 outline-none font-num text-lg">
+                                <input type="number" id="discount" step="0.01" value="0.7" oninput="calculatePrice()" class="w-1/4 pb-2 border-b-2 border-slate-100 focus:border-slate-800 outline-none font-num text-slate-400">
                             </div>
                         </div>
+                        <div class="flex items-center justify-between pt-2">
+                            <div class="font-num">
+                                <span class="text-3xl font-bold text-slate-800" id="finalPriceDisplay">$0</span>
+                                <span class="ml-2 text-xs font-bold text-emerald-500">Saved $<span id="saveDisplay">0</span></span>
+                            </div>
+                            <button onclick="addItem()" class="btn-main text-sm">ADD ITEM</button>
+                        </div>
                     </div>
-                </div>
-                <div class="mt-8 text-center">
-                    <button onclick="addItem()" class="btn-primary w-full md:w-auto text-xl">
-                        將寶物放入背包！ 🎒
-                    </button>
                 </div>
             </div>
 
-            <!-- 清單列表 -->
             <div id="itemsList" class="space-y-3">
-                <!-- Dynamic Items -->
+                <!-- Items list -->
             </div>
         </div>
     </div>
 
-    <div id="toast" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-8 py-4 rounded-full shadow-2xl transition-all duration-300 opacity-0 pointer-events-none font-bold z-50">
-        紀錄成功！
+    <div id="toast" class="fixed top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-xl text-xs font-bold shadow-2xl opacity-0 transition-all pointer-events-none z-[200]">
+        SAVED!
     </div>
 
     <script type="module">
-        // Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
@@ -235,7 +237,11 @@
         let appId = 'beggar-hero-2026';
         let useCloud = false;
 
-        // 偵測環境配置
+        const now = new Date();
+        let currentYear = now.getFullYear();
+        let currentMonth = now.getMonth();
+        const todayStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`;
+
         try {
             if (typeof __firebase_config !== 'undefined') {
                 const firebaseConfig = JSON.parse(__firebase_config);
@@ -245,25 +251,11 @@
                 if (typeof __app_id !== 'undefined') appId = __app_id;
                 useCloud = true;
             }
-        } catch (e) {
-            console.warn("Firebase config not found, switching to local mode.");
-        }
+        } catch (e) { console.warn("Cloud config missing."); }
 
-        let currentYear = 2026;
-        let currentMonth = 0;
-        let selectedDate = null;
+        let selectedDate = todayStr;
         let userData = JSON.parse(localStorage.getItem('beggarHero2026Data')) || {};
         let user = null;
-
-        const quotes = [
-            "「只要有折扣，我就是世界的王者！」 — 阿鵝",
-            "「草莓味的省錢生活最棒了。」 — 熊抱哥",
-            "「原價是給凡人付的，我們是超人。」 — 乞丐超人",
-            "「省下的每一分錢，都是對未來的投資。」 — 熊抱哥",
-            "「嘎！嘎嘎！（那是我的飯糰！）」 — 阿鵝",
-            "「看到貼紙沒去拿？阿鵝會生氣唷！」",
-            "「雖然我抱起來很香，但折扣更香。」 — 熊抱哥"
-        ];
 
         async function initApp() {
             if (useCloud && auth) {
@@ -272,27 +264,26 @@
                     onAuthStateChanged(auth, (u) => {
                         user = u;
                         if (user) {
-                            document.getElementById('syncStatus').innerText = "☁️ 雲端已同步";
-                            document.getElementById('syncStatus').classList.add('text-green-600');
+                            setStatus("☁️ 雲端同步中", "bg-emerald-400");
                             listenToUpdates();
                         }
                     });
-                } catch (error) {
-                    console.error("Auth failed", error);
-                    setLocalMode();
-                }
-            } else {
-                setLocalMode();
-            }
+                } catch (error) { setLocalMode(); }
+            } else { setLocalMode(); }
             
+            selectDate(now.getDate());
             renderCalendar();
             updateStats();
-            setInterval(rotateQuote, 5000);
+        }
+
+        function setStatus(text, dotClass) {
+            document.getElementById('statusText').innerText = text;
+            const dot = document.getElementById('statusDot');
+            dot.className = `w-2 h-2 rounded-full ${dotClass}`;
         }
 
         function setLocalMode() {
-            document.getElementById('syncStatus').innerText = "💾 本地儲存模式";
-            document.getElementById('syncStatus').classList.add('text-blue-500');
+            setStatus("💾 本地存檔中", "bg-blue-400");
         }
 
         function listenToUpdates() {
@@ -306,7 +297,7 @@
                     updateStats();
                     if (selectedDate) renderItems();
                 }
-            }, (err) => console.error("Firestore error", err));
+            });
         }
 
         async function syncToCloud() {
@@ -315,9 +306,7 @@
             try {
                 const dataRef = doc(db, 'artifacts', appId, 'public', 'data', 'records');
                 await setDoc(dataRef, { content: userData });
-            } catch (error) {
-                console.error("Upload failed", error);
-            }
+            } catch (error) {}
         }
 
         window.onload = initApp;
@@ -328,16 +317,6 @@
             else if (store === '7-11') setDiscount(0.65);
         }
 
-        window.rotateQuote = function() {
-            const quoteBox = document.getElementById('quoteBox');
-            if(!quoteBox) return;
-            quoteBox.style.opacity = 0;
-            setTimeout(() => {
-                quoteBox.innerText = quotes[Math.floor(Math.random() * quotes.length)];
-                quoteBox.style.opacity = 1;
-            }, 500);
-        }
-
         window.renderCalendar = function() {
             const grid = document.getElementById('calendarGrid');
             const monthDisplay = document.getElementById('currentMonthDisplay');
@@ -346,18 +325,19 @@
             
             const firstDay = new Date(currentYear, currentMonth, 1).getDay();
             const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-            monthDisplay.innerText = `${currentYear}年 ${currentMonth + 1}月`;
+            monthDisplay.innerText = `${currentYear} / ${(currentMonth + 1).toString().padStart(2, '0')}`;
 
             for (let i = 0; i < firstDay; i++) grid.innerHTML += `<div></div>`;
 
             for (let day = 1; day <= daysInMonth; day++) {
                 const dateKey = getDateKey(day);
-                const hasData = userData[dateKey] && userData[dateKey].length > 0;
+                const isToday = dateKey === todayStr;
                 const isActive = selectedDate === dateKey ? 'active' : '';
-                const dataClass = hasData ? 'has-data' : '';
+                const hasData = userData[dateKey] && userData[dateKey].length > 0 ? 'has-data' : '';
+                const todayClass = isToday ? 'today' : '';
                 
                 const dayEl = document.createElement('div');
-                dayEl.className = `calendar-day flex items-center justify-center text-xl ${isActive} ${dataClass}`;
+                dayEl.className = `calendar-day ${isActive} ${hasData} ${todayClass}`;
                 dayEl.innerText = day;
                 dayEl.onclick = () => selectDate(day);
                 grid.appendChild(dayEl);
@@ -377,17 +357,10 @@
 
         window.selectDate = function(day) {
             selectedDate = getDateKey(day);
-            document.getElementById('selectedDateDisplay').innerText = `📅 ${selectedDate}`;
+            document.getElementById('selectedDateDisplay').innerText = selectedDate.replace(/-/g, ' / ');
             document.getElementById('dataSection').classList.remove('hidden');
             renderCalendar();
             renderItems();
-            document.getElementById('dataSection').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        window.closeDataSection = function() {
-            document.getElementById('dataSection').classList.add('hidden');
-            selectedDate = null;
-            renderCalendar();
         }
 
         window.setDiscount = function(val) {
@@ -406,12 +379,12 @@
         }
 
         window.addItem = async function() {
-            const name = document.getElementById('itemName').value || '未知寶物';
+            const name = document.getElementById('itemName').value || '未知商品';
             const store = document.getElementById('store').value;
             const original = parseFloat(document.getElementById('originalPrice').value) || 0;
             const discount = parseFloat(document.getElementById('discount').value) || 1;
             
-            if (original <= 0) return showToast('原價不能是0元呀！');
+            if (original <= 0) return showToast('請輸入金額');
 
             const { final, saved } = calculatePrice();
             if (!userData[selectedDate]) userData[selectedDate] = [];
@@ -425,7 +398,7 @@
             
             document.getElementById('itemName').value = '';
             document.getElementById('originalPrice').value = '';
-            showToast(useCloud ? '紀錄成功！已同步至雲端 ☁️' : '紀錄成功！已儲存在此瀏覽器 💾');
+            showToast('已加入背囊');
         }
 
         window.deleteItem = async function(id) {
@@ -442,27 +415,27 @@
             const items = userData[selectedDate] || [];
 
             if (items.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 text-gray-300 font-bold">這天還沒有冒險紀錄呢...</div>`;
+                container.innerHTML = `<div class="text-center py-12 text-slate-300 text-xs font-bold tracking-widest">NO RECORDS TODAY</div>`;
                 return;
             }
 
             items.forEach(item => {
                 const itemEl = document.createElement('div');
-                itemEl.className = "flex items-center justify-between bg-white p-4 rounded-2xl border-2 border-pink-50 shadow-sm hover:border-pink-200 transition-colors";
+                itemEl.className = "glass-card p-5 flex items-center justify-between";
                 itemEl.innerHTML = `
                     <div class="flex items-center gap-4">
-                        <div class="bg-pink-100 p-2 rounded-xl text-2xl">🍱</div>
+                        <div class="text-xl">🍱</div>
                         <div>
-                            <div class="font-black text-gray-800">${item.name}</div>
-                            <div class="text-xs text-pink-400 font-bold">${item.store} / ${Math.round(item.discount*100)}% 價格</div>
+                            <div class="font-bold text-slate-700">${item.name}</div>
+                            <div class="text-[10px] font-black text-slate-300 uppercase">${item.store} / ${Math.round(item.discount*100)}%</div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-6">
-                        <div class="text-right">
-                            <div class="text-xl font-black text-pink-600">$${item.final}</div>
-                            <div class="text-xs text-green-500 font-bold">省 $${item.saved}</div>
+                    <div class="flex items-center gap-8">
+                        <div class="text-right font-num">
+                            <div class="text-lg font-bold text-slate-800">$${item.final}</div>
+                            <div class="text-[10px] font-bold text-emerald-500">+$${item.saved}</div>
                         </div>
-                        <button onclick="deleteItem(${item.id})" class="text-gray-300 hover:text-red-500 text-xl transition-colors font-bold px-2">✕</button>
+                        <button onclick="deleteItem(${item.id})" class="text-slate-200 hover:text-red-400 transition-colors px-2">✕</button>
                     </div>
                 `;
                 container.appendChild(itemEl);
@@ -480,13 +453,13 @@
             });
 
             document.getElementById('totalCount').innerText = totalCount;
-            document.getElementById('totalSaved').innerText = `$${totalSaved}`;
+            document.getElementById('totalSaved').innerText = totalSaved.toLocaleString();
 
-            let rank = "省錢初心者";
-            if (totalSaved > 10000) rank = "打折界神祇";
-            else if (totalSaved > 5000) rank = "省錢傳說";
-            else if (totalSaved > 2000) rank = "資深乞丐超人";
-            else if (totalSaved > 500) rank = "省錢小能手";
+            let rank = "初心冒險者";
+            if (totalSaved > 10000) rank = "傳說中的乞丐王";
+            else if (totalSaved > 5000) rank = "省錢大師";
+            else if (totalSaved > 2000) rank = "資深拾荒者";
+            else if (totalSaved > 500) rank = "進階超人";
 
             document.getElementById('achievementRank').innerText = rank;
         }
@@ -495,11 +468,11 @@
             const toast = document.getElementById('toast');
             toast.innerText = msg;
             toast.style.opacity = 1;
-            toast.style.pointerEvents = 'auto';
+            toast.style.transform = 'translate(-50%, 10px)';
             setTimeout(() => {
                 toast.style.opacity = 0;
-                toast.style.pointerEvents = 'none';
-            }, 3000);
+                toast.style.transform = 'translate(-50%, 0)';
+            }, 2500);
         }
     </script>
 </body>
